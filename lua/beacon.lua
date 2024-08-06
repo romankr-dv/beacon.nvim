@@ -16,9 +16,9 @@ local default_config = {
   width = 40,
   winblend = 70,
   fps = 60,
-  min_jump = 10,
+  min_jump = 1,
   cursor_events = { 'CursorMoved' },
-  window_events = { 'WinEnter', 'FocusGained' },
+  window_events = { 'WinEnter', 'BufEnter', 'FocusGained' },
   highlight = { bg = 'white', ctermbg = 15, default = true },
 }
 
@@ -68,6 +68,11 @@ function M.highlight_cursor()
     return
   end
 
+  -- ingore terminal buffers
+  if vim.bo.buftype:find("terminal") then
+    return
+  end
+
   -- ignore floating windows
   if vim.api.nvim_win_get_config(vim.api.nvim_get_current_win()).relative ~= '' then
     return
@@ -106,20 +111,16 @@ local function cursor_moved(event)
   if not vim.api.nvim_buf_is_loaded(event.buf) then
     return
   end
-  local prev_cursor = vim.b[event.buf].beacon_prev_cursor or 0
   local prev_abs = vim.b[event.buf].beacon_prev_abs or 0
 
   local cfg = M.config
-  local cur = vim.fn.winline()
   local cur_abs = vim.fn.line '.'
-  local diff = math.abs(cur - prev_cursor)
   local abs_diff = math.abs(cur_abs - prev_abs)
 
-  if diff > cfg.min_jump and abs_diff > cfg.min_jump then
+  if abs_diff > cfg.min_jump then
     M.highlight_cursor()
   end
 
-  vim.b[event.buf].beacon_prev_cursor = cur
   vim.b[event.buf].beacon_prev_abs = cur_abs
 end
 
